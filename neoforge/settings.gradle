@@ -1,0 +1,12 @@
+pluginManagement {
+    repositories {
+        maven { url = 'https://maven.neoforged.net/releases' }
+        gradlePluginPortal()
+        mavenCentral()
+    }
+    plugins {
+        // версия ModDevGradle задаётся параметром -Pmdg_version
+        id 'net.neoforged.moddev' version "${mdg_version}"
+    }
+}
+rootProject.name = 'nexus-coop-neoforge'

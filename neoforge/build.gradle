@@ -1,0 +1,37 @@
+plugins {
+    id 'java'
+    id 'net.neoforged.moddev'
+}
+
+version = project.mod_version
+base { archivesName = 'nexus-coop-neoforge' }
+
+repositories {
+    mavenCentral()
+    maven { url = 'https://repo.spongepowered.org/maven/' }
+}
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+
+neoForge {
+    version = project.neo_version
+}
+
+dependencies {
+    // аннотации Mixin для компиляции (в игре Mixin уже есть)
+    compileOnly 'org.spongepowered:mixin:0.8.7'
+}
+
+processResources {
+    inputs.property 'version', project.version
+    inputs.property 'neo_range', project.neo_range
+    inputs.property 'mc_range', project.mc_range
+    inputs.property 'mixin_level', project.mixin_level
+    filesMatching(['META-INF/neoforge.mods.toml', 'nexus-coop.mixins.json']) {
+        expand 'version': project.version, 'neo_range': project.neo_range, 'mc_range': project.mc_range, 'mixin_level': project.mixin_level
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.release = 21
+}
