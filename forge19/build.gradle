@@ -1,0 +1,37 @@
+// Minecraft 1.9 - 1.11.2 (Forge). Нет Mixin: мод работает на событиях Forge.
+// ForgeGradle 2.0-2.2 (версию задаёт workflow) на Gradle 2.14.1 и Java 8. Версии Forge и маппингов задаёт workflow через -P.
+buildscript {
+    repositories {
+        mavenCentral()
+        maven { url = 'https://maven.minecraftforge.net/' }
+        jcenter()
+    }
+    dependencies {
+        classpath "net.minecraftforge.gradle:ForgeGradle:${project.findProperty('fg_version') ?: '2.2-SNAPSHOT'}"
+    }
+}
+
+apply plugin: 'net.minecraftforge.gradle.forge'
+
+version = project.mod_version
+group = 'dev.nexusmc'
+archivesBaseName = 'nexus-coop-forge'
+
+sourceCompatibility = targetCompatibility = '1.8'
+compileJava {
+    sourceCompatibility = targetCompatibility = '1.8'
+    options.encoding = 'UTF-8'
+}
+
+minecraft {
+    version = project.forge_version
+    runDir = 'run'
+    mappings = project.mcp_mappings
+}
+
+processResources {
+    inputs.property 'mcversion', project.mc_version
+    filesMatching('mcmod.info') {
+        expand 'mcversion': project.mc_version
+    }
+}

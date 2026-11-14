@@ -1,0 +1,66 @@
+buildscript {
+    repositories {
+        maven { url = 'https://maven.minecraftforge.net' }
+        mavenCentral()
+        // Сервер Sponge иногда не отвечает: обращаемся к нему ТОЛЬКО за библиотеками Sponge (MixinGradle),
+        // а не за каждой библиотекой подряд, иначе его сбой ломает всю сборку
+        maven {
+            url = 'https://repo.spongepowered.org/repository/maven-public/'
+            content { includeGroup 'org.spongepowered' }
+        }
+    }
+    dependencies {
+        // ForgeGradle 5 для Minecraft 1.16.5 - 1.19.4, ForgeGradle 6 для 1.20 и новее
+        classpath "net.minecraftforge.gradle:ForgeGradle:${project.findProperty('fg_range') ?: '[6.0,6.2)'}"
+        classpath 'org.spongepowered:mixingradle:0.7.+'
+    }
+}
+
+apply plugin: 'net.minecraftforge.gradle'
+apply plugin: 'org.spongepowered.mixin'
+apply plugin: 'java'
+
+version = project.mod_version
+group = 'dev.nexusmc'
+base { archivesName = 'nexus-coop-forge' }
+
+def javaRelease = project.java_release as int
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(project.jdk as int)
+
+minecraft {
+    mappings channel: 'official', version: project.minecraft_version
+}
+
+mixin {
+    add sourceSets.main, 'nexus-coop.refmap.json'
+    config 'nexus-coop.mixins.json'
+}
+
+dependencies {
+    minecraft "net.minecraftforge:forge:${project.minecraft_version}-${project.forge_version}"
+    annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
+}
+
+processResources {
+    inputs.property 'mixin_level', project.mixin_level
+    inputs.property 'pack_format', project.pack_format
+    filesMatching(['nexus-coop.mixins.json', 'pack.mcmeta']) {
+        expand 'mixin_level': project.mixin_level, 'pack_format': project.pack_format
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    if ((project.jdk as int) >= 9) it.options.release = javaRelease
+}
+
+jar {
+    manifest {
+        attributes('MixinConfigs': 'nexus-coop.mixins.json')
+    }
+}
+
+// у Forge 1.20.5+ игра уже на официальных именах, задачи reobfJar там нет
+afterEvaluate {
+    if (tasks.findByName('reobfJar') != null) jar.finalizedBy('reobfJar')
+}

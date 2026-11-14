@@ -1,0 +1,32 @@
+plugins {
+    id 'net.fabricmc.fabric-loom-remap' version "${loom_version}"
+    id 'legacy-looming' version "${loom_version}" // версия та же, что у Loom
+}
+
+version = project.mod_version
+group = 'dev.nexusmc'
+base { archivesName = 'nexus-coop-fabric' }
+
+legacyLooming {
+    // второе поколение intermediary: именно для него есть сборки Legacy Yarn (net.legacyfabric.v2) для 1.8.9 - 1.12.2
+    intermediaryVersion = 2
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings(legacy.yarn(project.minecraft_version, project.yarn_build))
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+}
+
+processResources {
+    inputs.property 'version', project.version
+    inputs.property 'mc_range', project.mc_range
+    filesMatching('fabric.mod.json') {
+        expand 'version': project.version, 'mc_range': project.mc_range
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = 8
+}

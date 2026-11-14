@@ -1,0 +1,30 @@
+// Minecraft 1.12 - 1.12.2 (Forge). Здесь нет Mixin: Forge 1.12.2 его не содержит,
+// поэтому мод работает на событиях Forge. Сборка через RetroFuturaGradle (ForgeGradle 2.3 больше не работает:
+// у Forge убрали файл userdev, который он скачивает). Имена в исходниках - MCP, jar переводится в рабочие имена.
+plugins {
+    id 'java'
+    id 'com.gtnewhorizons.retrofuturagradle' version '1.4.+'
+}
+
+version = project.mod_version
+group = 'dev.nexusmc'
+archivesBaseName = 'nexus-coop-forge'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(8)
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+minecraft {
+    mcVersion = '1.12.2'
+    username = 'Developer'
+}
+
+repositories {
+    mavenCentral()
+}

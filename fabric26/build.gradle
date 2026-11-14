@@ -1,0 +1,32 @@
+plugins {
+    id 'net.fabricmc.fabric-loom'
+}
+
+version = project.mod_version
+base { archivesName = 'nexus-coop' }
+
+def javaRelease = project.java_release as int
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    // С 26.1 Minecraft без обфускации: строки mappings больше нет, моды подключаются через implementation
+    implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+}
+
+processResources {
+    inputs.property 'version', project.version
+    inputs.property 'mc_dep', project.mc_dep
+    inputs.property 'mixin_level', project.mixin_level
+    filesMatching(['fabric.mod.json', 'nexus-coop.mixins.json']) {
+        expand 'version': project.version, 'mc_dep': project.mc_dep, 'mixin_level': project.mixin_level
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.release = javaRelease
+}
+
+java {
+    sourceCompatibility = JavaVersion.toVersion(javaRelease)
+    targetCompatibility = JavaVersion.toVersion(javaRelease)
+}

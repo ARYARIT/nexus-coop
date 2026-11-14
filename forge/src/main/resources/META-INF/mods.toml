@@ -1,0 +1,10 @@
+modLoader = "javafml"
+loaderVersion = "[1,)"
+license = "MIT"
+
+[[mods]]
+modId = "nexus_coop"
+version = "1.0.0"
+displayName = "NexusMC Coop Helper"
+displayTest = "IGNORE_ALL_VERSION"
+description = '''Открывает мир для друзей через лаунчер NexusMC. Без лаунчера ничего не делает.'''
