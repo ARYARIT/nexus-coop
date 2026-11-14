@@ -1,0 +1,538 @@
+name: build-coop-helper
+on:
+  workflow_dispatch:
+  push:
+
+# Имя готового файла: nexus-coop-<загрузчик>-<с версии>_<по версию>.jar
+# Лаунчер сам выбирает файл, в диапазон которого попадает версия Minecraft сборки.
+
+jobs:
+  # ---------- Fabric и Quilt, Minecraft 1.14.4 - 1.21.11 (с обфускацией) ----------
+  fabric:
+    name: fabric ${{ matrix.from }}-${{ matrix.to }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { from: '1.14',   to: '1.14.4',  mc: '1.14.4',  java: 8,  level: 8,  loader: '0.16.5',  loom: '1.7-SNAPSHOT',  gradle: '8.10.2' }
+          - { from: '1.15',   to: '1.15.2',  mc: '1.15.2',  java: 8,  level: 8,  loader: '0.16.5',  loom: '1.7-SNAPSHOT',  gradle: '8.10.2' }
+          - { from: '1.16',   to: '1.16.5',  mc: '1.16.5',  java: 8,  level: 8,  loader: '0.16.5',  loom: '1.7-SNAPSHOT',  gradle: '8.10.2' }
+          - { from: '1.17',   to: '1.17.1',  mc: '1.17.1',  java: 16, level: 16, loader: '0.16.5',  loom: '1.7-SNAPSHOT',  gradle: '8.10.2' }
+          - { from: '1.18',   to: '1.18.2',  mc: '1.18.2',  java: 17, level: 17, loader: '0.16.5',  loom: '1.7-SNAPSHOT',  gradle: '8.10.2' }
+          - { from: '1.19',   to: '1.19.2',  mc: '1.19.2',  java: 17, level: 17, loader: '0.16.5',  loom: '1.7-SNAPSHOT',  gradle: '8.10.2' }
+          - { from: '1.19.3', to: '1.19.4',  mc: '1.19.4',  java: 17, level: 17, loader: '0.16.5',  loom: '1.7-SNAPSHOT',  gradle: '8.10.2' }
+          - { from: '1.20',   to: '1.20.1',  mc: '1.20.1',  java: 17, level: 17, loader: '0.16.5',  loom: '1.7-SNAPSHOT',  gradle: '8.10.2' }
+          - { from: '1.20.2', to: '1.20.4',  mc: '1.20.4',  java: 17, level: 17, loader: '0.16.5',  loom: '1.7-SNAPSHOT',  gradle: '8.10.2' }
+          - { from: '1.20.5', to: '1.20.6',  mc: '1.20.6',  java: 21, level: 21, loader: '0.16.5',  loom: '1.7-SNAPSHOT',  gradle: '8.10.2' }
+          - { from: '1.21',   to: '1.21.1',  mc: '1.21.1',  java: 21, level: 21, loader: '0.16.5',  loom: '1.7-SNAPSHOT',  gradle: '8.10.2' }
+          - { from: '1.21.2', to: '1.21.4',  mc: '1.21.4',  java: 21, level: 21, loader: '0.16.10', loom: '1.9-SNAPSHOT',  gradle: '8.14' }
+          - { from: '1.21.5', to: '1.21.5',  mc: '1.21.5',  java: 21, level: 21, loader: '0.16.14', loom: '1.10-SNAPSHOT', gradle: '8.14' }
+          - { from: '1.21.6', to: '1.21.8',  mc: '1.21.8',  java: 21, level: 21, loader: '0.16.14', loom: '1.10-SNAPSHOT', gradle: '8.14' }
+          - { from: '1.21.9', to: '1.21.11', mc: '1.21.11', java: 21, level: 21, loader: '0.18.4',  loom: '1.13-SNAPSHOT', gradle: '8.14' }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: ${{ matrix.gradle }}
+      - name: Build
+        env:
+          DEP: ${{ matrix.from == matrix.to && matrix.from || format('>={0} <={1}', matrix.from, matrix.to) }}
+        run: >-
+          gradle build --no-daemon
+          -Pminecraft_version=${{ matrix.mc }}
+          "-Pmc_dep=$DEP"
+          -Pjava_release=${{ matrix.java }}
+          -Pmixin_level=${{ matrix.level }}
+          -Ploader_version=${{ matrix.loader }}
+          -Ploom_version=${{ matrix.loom }}
+      - run: |
+          mkdir -p out
+          cp build/libs/nexus-coop-*[0-9].jar "out/nexus-coop-fabric-${{ matrix.from }}_${{ matrix.to }}.jar"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: jar-fabric-${{ matrix.from }}_${{ matrix.to }}
+          path: out/*.jar
+
+  # ---------- Fabric, Minecraft 26.x (без обфускации, Java 25; Quilt для 26.x нет) ----------
+  fabric26:
+    name: fabric ${{ matrix.from }}-${{ matrix.to }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { from: '26.1', to: '26.1.99', mc: '26.1.2', loader: '0.18.4', loom: '1.15-SNAPSHOT', gradle: '9.4.1' }
+          - { from: '26.2', to: '26.2.99', mc: '26.2',   loader: '0.18.4', loom: '1.15-SNAPSHOT', gradle: '9.4.1' }
+          - { from: '26.3', to: '26.3.99', mc: '26.3',   loader: '0.18.4', loom: '1.15-SNAPSHOT', gradle: '9.4.1' }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 25
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: ${{ matrix.gradle }}
+      - name: Build
+        working-directory: fabric26
+        env:
+          DEP: ${{ matrix.from == matrix.to && matrix.from || format('>={0} <={1}', matrix.from, matrix.to) }}
+        run: >-
+          gradle build --no-daemon
+          -Pminecraft_version=${{ matrix.mc }}
+          "-Pmc_dep=$DEP"
+          -Pjava_release=25
+          -Pmixin_level=21
+          -Ploader_version=${{ matrix.loader }}
+          -Ploom_version=${{ matrix.loom }}
+      - working-directory: fabric26
+        run: |
+          mkdir -p out
+          cp build/libs/nexus-coop-*[0-9].jar "out/nexus-coop-fabric-${{ matrix.from }}_${{ matrix.to }}.jar"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: jar-fabric-${{ matrix.from }}_${{ matrix.to }}
+          path: fabric26/out/*.jar
+
+  # ---------- NeoForge ----------
+  neoforge:
+    name: neoforge ${{ matrix.from }}-${{ matrix.to }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { from: '1.20.2', to: '1.20.4',  neo: '',         prefix: '20.4',  neorange: '[20.2,20.5)',  mdg: '2.0.78',  gradle: '8.10.2', jdk: 21, java: 17 }
+          - { from: '1.20.5', to: '1.20.6',  neo: '',         prefix: '20.6',  neorange: '[20.5,20.7)',  mdg: '2.0.78',  gradle: '8.10.2', jdk: 21, java: 21 }
+          - { from: '1.21',   to: '1.21.1',  neo: '21.1.172', prefix: '21.1',  neorange: '[21.0,21.2)',  mdg: '2.0.78',  gradle: '8.10.2', jdk: 21, java: 21 }
+          - { from: '1.21.2', to: '1.21.4',  neo: '',         prefix: '21.4',  neorange: '[21.2,21.5)',  mdg: '2.0.78',  gradle: '8.10.2', jdk: 21, java: 21 }
+          - { from: '1.21.5', to: '1.21.5',  neo: '',         prefix: '21.5',  neorange: '[21.5,21.6)',  mdg: '2.0.103', gradle: '8.14',   jdk: 21, java: 21 }
+          - { from: '1.21.6', to: '1.21.8',  neo: '',         prefix: '21.8',  neorange: '[21.6,21.9)',  mdg: '2.0.103', gradle: '8.14',   jdk: 21, java: 21 }
+          - { from: '1.21.9', to: '1.21.11', neo: '',         prefix: '21.11', neorange: '[21.9,21.12)', mdg: '2.0.141', gradle: '9.4.1',  jdk: 21, java: 21 }
+          - { from: '26.1',   to: '26.1.99', neo: '',         prefix: '26.1',  neorange: '[26.1,26.2)',  mdg: '2.0.141', gradle: '9.4.1',  jdk: 25, java: 25 }
+          - { from: '26.2',   to: '26.2.99', neo: '',         prefix: '26.2',  neorange: '[26.2,26.3)',  mdg: '2.0.141', gradle: '9.4.1',  jdk: 25, java: 25 }
+          - { from: '26.3',   to: '26.3.99', neo: '',         prefix: '26.3',  neorange: '[26.3,26.4)',  mdg: '2.0.141', gradle: '9.4.1',  jdk: 25, java: 25 }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.jdk }}
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: ${{ matrix.gradle }}
+      - name: Find NeoForge version
+        id: neo
+        env:
+          PINNED: ${{ matrix.neo }}
+          PREFIX: ${{ matrix.prefix }}
+        run: |
+          v="$PINNED"
+          if [ -z "$v" ]; then
+            meta=$(curl -fsSL https://maven.neoforged.net/releases/net/neoforged/neoforge/maven-metadata.xml)
+            p="${PREFIX//./\\.}"
+            # сначала стабильная версия, если её ещё нет, то последняя бета
+            v=$(echo "$meta" | grep -oP "(?<=<version>)${p}\.[0-9.]+(?=</version>)" | sort -V | tail -1 || true)
+            if [ -z "$v" ]; then
+              v=$(echo "$meta" | grep -oP "(?<=<version>)${p}\.[0-9.]+-beta(?=</version>)" | sort -V | tail -1 || true)
+            fi
+          fi
+          echo "NeoForge version: $v"
+          if [ -z "$v" ]; then echo "NeoForge version not found"; exit 1; fi
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+      - name: Build
+        uses: nick-fields/retry@v3
+        env:
+          FROM: ${{ matrix.from }}
+          TO: ${{ matrix.to }}
+        with:
+          timeout_minutes: 25
+          max_attempts: 3
+          retry_wait_seconds: 90
+          command: >-
+            cd neoforge &&
+            gradle build --no-daemon
+            -Pneo_version=${{ steps.neo.outputs.version }}
+            "-Pneo_range=${{ matrix.neorange }}"
+            "-Pmc_range=[$FROM,$TO]"
+            -Pmdg_version=${{ matrix.mdg }}
+            -Pjdk=${{ matrix.jdk }}
+            -Pjava_release=${{ matrix.java }}
+      - working-directory: neoforge
+        run: |
+          mkdir -p out
+          cp build/libs/nexus-coop-neoforge-*[0-9].jar "out/nexus-coop-neoforge-${{ matrix.from }}_${{ matrix.to }}.jar"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: jar-neoforge-${{ matrix.from }}_${{ matrix.to }}
+          path: neoforge/out/*.jar
+
+  # ---------- Forge (экспериментально) ----------
+  forge:
+    name: forge ${{ matrix.from }}-${{ matrix.to }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { from: '1.20',   to: '1.20.1', mc: '1.20.1', forge: '47.3.0', fg: '[6.0,6.2)', gradle: '8.8',   jdk: 17, java: 17, level: 17, pack: 15 }
+          - { from: '1.20.2', to: '1.20.4', mc: '1.20.4', forge: '',       fg: '[6.0,6.2)', gradle: '8.8',   jdk: 17, java: 17, level: 17, pack: 22 }
+          - { from: '1.20.5', to: '1.20.6', mc: '1.20.6', forge: '',       fg: '[6.0,6.2)', gradle: '8.8',   jdk: 21, java: 21, level: 21, pack: 32 }
+          - { from: '1.21',   to: '1.21.1', mc: '1.21.1', forge: '',       fg: '[6.0,6.2)', gradle: '8.8',   jdk: 21, java: 21, level: 21, pack: 34 }
+          - { from: '1.21.2', to: '1.21.4', mc: '1.21.4', forge: '',       fg: '[6.0,6.2)', gradle: '8.8',   jdk: 21, java: 21, level: 21, pack: 46 }
+          - { from: '1.21.5', to: '1.21.5', mc: '1.21.5', forge: '',       fg: '[6.0,6.2)', gradle: '8.8',   jdk: 21, java: 21, level: 21, pack: 55 }
+          # 1.21.6+ экспериментально: настройки угаданы по прошлым версиям, если сборка красная, её можно убрать
+          - { from: '1.21.6', to: '1.21.8',  mc: '1.21.8',  forge: '',       fg: '[6.0,6.2)', gradle: '8.8',   jdk: 21, java: 21, level: 21, pack: 64 }
+          - { from: '1.19.3', to: '1.19.4', mc: '1.19.4', forge: '',       fg: '[5.1,5.2)', gradle: '7.6.4', jdk: 17, java: 17, level: 17, pack: 12 }
+          - { from: '1.19',   to: '1.19.2', mc: '1.19.2', forge: '',       fg: '[5.1,5.2)', gradle: '7.6.4', jdk: 17, java: 17, level: 17, pack: 9 }
+          - { from: '1.18',   to: '1.18.2', mc: '1.18.2', forge: '',       fg: '[5.1,5.2)', gradle: '7.6.4', jdk: 17, java: 17, level: 17, pack: 8 }
+          - { from: '1.17',   to: '1.17.1', mc: '1.17.1', forge: '',       fg: '[5.1,5.2)', gradle: '7.6.4', jdk: 17, java: 16, level: 16, pack: 7 }
+          - { from: '1.16',   to: '1.16.5', mc: '1.16.5', forge: '',       fg: '[5.1,5.2)', gradle: '7.6.4', jdk: 8,  java: 8,  level: 8,  pack: 6 }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.jdk }}
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: ${{ matrix.gradle }}
+      - name: Class names for 1.16.5 (official mappings keep the old package layout)
+        if: ${{ matrix.mc == '1.16.5' }}
+        run: |
+          cd forge/src/main/java/dev/nexusmc/coop
+          sed -i -e 's/net\.minecraft\.client\.server\.IntegratedServer/net.minecraft.server.integrated.IntegratedServer/' \
+                 -e 's/net\.minecraft\.server\.network\.ServerConnectionListener/net.minecraft.network.NetworkSystem/' \
+                 -e 's/\bServerConnectionListener\b/NetworkSystem/g' NexusCoop.java mixin/*.java
+      - name: Find Forge version
+        id: forge
+        env:
+          PINNED: ${{ matrix.forge }}
+          MC: ${{ matrix.mc }}
+        run: |
+          v="$PINNED"
+          if [ -z "$v" ]; then
+            meta=$(curl -fsSL https://maven.minecraftforge.net/net/minecraftforge/forge/maven-metadata.xml)
+            p="${MC//./\\.}"
+            v=$(echo "$meta" | grep -oP "(?<=<version>${p}-)[0-9.]+(?=</version>)" | sort -V | tail -1 || true)
+          fi
+          echo "Forge version: $v"
+          if [ -z "$v" ]; then echo "Forge version not found"; exit 1; fi
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+      - name: Build
+        # до трёх попыток: библиотеки скачиваются из интернета, и сервер иногда временно не отвечает
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 25
+          max_attempts: 3
+          retry_wait_seconds: 90
+          command: >-
+            cd forge &&
+            gradle build --no-daemon
+            -Pminecraft_version=${{ matrix.mc }}
+            -Pforge_version=${{ steps.forge.outputs.version }}
+            "-Pfg_range=${{ matrix.fg }}"
+            -Pjdk=${{ matrix.jdk }}
+            -Pjava_release=${{ matrix.java }}
+            -Pmixin_level=${{ matrix.level }}
+            -Ppack_format=${{ matrix.pack }}
+      - working-directory: forge
+        run: |
+          mkdir -p out
+          cp build/libs/nexus-coop-forge-*[0-9].jar "out/nexus-coop-forge-${{ matrix.from }}_${{ matrix.to }}.jar"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: jar-forge-${{ matrix.from }}_${{ matrix.to }}
+          path: forge/out/*.jar
+
+  # ---------- Forge 1.21.9 - 1.21.11 (ForgeGradle 7, Mixin, официальные имена) ----------
+  forge7:
+    name: forge 1.21.9-1.21.11
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.4.1'
+      - name: Find Forge version
+        id: forge
+        run: |
+          meta=$(curl -fsSL https://maven.minecraftforge.net/net/minecraftforge/forge/maven-metadata.xml)
+          v=$(echo "$meta" | grep -oP '(?<=<version>1\.21\.11-)[0-9.]+(?=</version>)' | sort -V | tail -1 || true)
+          echo "Forge version: $v"
+          if [ -z "$v" ]; then echo "Forge version not found"; exit 1; fi
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+      - name: Build
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 25
+          max_attempts: 3
+          retry_wait_seconds: 90
+          command: cd forge7 && gradle build --no-daemon -Pforge_version=${{ steps.forge.outputs.version }}
+      - working-directory: forge7
+        run: |
+          mkdir -p out
+          ls -l build/libs
+          cp build/libs/nexus-coop-forge-*[0-9].jar "out/nexus-coop-forge-1.21.9_1.21.11.jar"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: jar-forge-1.21.9_1.21.11
+          path: forge7/out/*.jar
+
+  # ---------- Forge 1.13.2 (ForgeGradle 3, Gradle 4.10.3, Java 8; без Mixin, на событиях Forge, имена MCP) ----------
+  forge13:
+    name: forge 1.13-1.13.2
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 8
+      - name: Install Gradle 4.10.3
+        run: |
+          curl -fsSL https://services.gradle.org/distributions/gradle-4.10.3-bin.zip -o "$RUNNER_TEMP/gradle.zip"
+          unzip -q "$RUNNER_TEMP/gradle.zip" -d "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/gradle-4.10.3/bin" >> "$GITHUB_PATH"
+      - name: Build
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 25
+          max_attempts: 3
+          retry_wait_seconds: 90
+          command: cd forge13 && gradle build --no-daemon
+      - working-directory: forge13
+        run: |
+          mkdir -p out
+          cp build/libs/nexus-coop-forge-*[0-9].jar "out/nexus-coop-forge-1.13_1.13.2.jar"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: jar-forge-1.13_1.13.2
+          path: forge13/out/*.jar
+
+  # ---------- Forge 1.14.4 и 1.15.2 (ForgeGradle 3, Gradle 4.10.3, Java 8; без Mixin, на событиях Forge) ----------
+  forge14:
+    name: forge ${{ matrix.from }}-${{ matrix.to }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { from: '1.14', to: '1.14.4', mc: '1.14.4', forge: '28.2.26', range: '[28,)', pack: 4 }
+          - { from: '1.15', to: '1.15.2', mc: '1.15.2', forge: '31.2.57', range: '[31,)', pack: 5 }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 8
+      - name: Install Gradle 4.10.3
+        run: |
+          curl -fsSL https://services.gradle.org/distributions/gradle-4.10.3-bin.zip -o "$RUNNER_TEMP/gradle.zip"
+          unzip -q "$RUNNER_TEMP/gradle.zip" -d "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/gradle-4.10.3/bin" >> "$GITHUB_PATH"
+      - name: Build
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 25
+          max_attempts: 3
+          retry_wait_seconds: 90
+          command: >-
+            cd forge14 &&
+            gradle build --no-daemon
+            -Pmc_version=${{ matrix.mc }}
+            -Pforge_version=${{ matrix.forge }}
+            "-Ploader_range=${{ matrix.range }}"
+            -Ppack_format=${{ matrix.pack }}
+      - working-directory: forge14
+        run: |
+          mkdir -p out
+          cp build/libs/nexus-coop-forge-*[0-9].jar "out/nexus-coop-forge-${{ matrix.from }}_${{ matrix.to }}.jar"
+      - name: Diagnostics (where the server classes live)
+        if: failure()
+        run: |
+          for j in $(find ~/.gradle/caches/forge_gradle -name '*.jar' 2>/dev/null); do
+            unzip -l "$j" 2>/dev/null | grep -E "/(IntegratedServer|ServerConnectionListener|NetworkSystem|MinecraftServer)\.class" | sed "s|^|$(basename $j): |"
+          done | head -40
+      - uses: actions/upload-artifact@v4
+        with:
+          name: jar-forge-${{ matrix.from }}_${{ matrix.to }}
+          path: forge14/out/*.jar
+
+  # ---------- Forge 1.12 - 1.12.2 (ForgeGradle 2.3, Gradle 4.9, Java 8; без Mixin, на событиях Forge) ----------
+  forge112:
+    name: forge 1.12-1.12.2
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: |
+            8
+            17
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Build
+        # RetroFuturaGradle сам скачивает Minecraft и Forge 1.12.2 (ForgeGradle 2 больше не работает: у Forge убрали его userdev)
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 30
+          max_attempts: 3
+          retry_wait_seconds: 90
+          command: cd forge112 && gradle build --no-daemon
+      - working-directory: forge112
+        run: |
+          mkdir -p out
+          ls -l build/libs
+          cp build/libs/nexus-coop-forge-*[0-9].jar "out/nexus-coop-forge-1.12_1.12.2.jar"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: jar-forge-1.12_1.12.2
+          path: forge112/out/*.jar
+
+  forge17:
+    name: forge 1.7.10
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: |
+            8
+            17
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Build
+        # RetroFuturaGradle сам скачивает Minecraft и Forge 1.12.2 (ForgeGradle 2 больше не работает: у Forge убрали его userdev)
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 30
+          max_attempts: 3
+          retry_wait_seconds: 90
+          command: cd forge17 && gradle build --no-daemon
+      - working-directory: forge17
+        run: |
+          mkdir -p out
+          ls -l build/libs
+          cp build/libs/nexus-coop-forge-*[0-9].jar "out/nexus-coop-forge-1.7.10_1.7.10.jar"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: jar-forge-1.7.10_1.7.10
+          path: forge17/out/*.jar
+
+  # ---------- Forge 1.8.9 - 1.11.2 (ForgeGradle 2.0-2.2, Gradle 2.14.1, Java 8; без Mixin) ----------
+  forge19:
+    name: forge ${{ matrix.from }}-${{ matrix.to }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { from: '1.8',  to: '1.8.9',  mc: '1.8.9',  forge: '1.8.9-11.15.1.2318-1.8.9', mcp: 'stable_22', fg: '2.1-SNAPSHOT' }
+          - { from: '1.9',  to: '1.9.4',  mc: '1.9.4',  forge: '1.9.4-12.17.0.2317-1.9.4', mcp: 'stable_26', fg: '2.2-SNAPSHOT' }
+          - { from: '1.10', to: '1.10.2', mc: '1.10.2', forge: '1.10.2-12.18.3.2511',      mcp: 'stable_29', fg: '2.2-SNAPSHOT' }
+          - { from: '1.11', to: '1.11.2', mc: '1.11.2', forge: '1.11.2-13.20.1.2588',      mcp: 'stable_32', fg: '2.2-SNAPSHOT' }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 8
+      - name: Install Gradle 2.14.1
+        run: |
+          curl -fsSL https://services.gradle.org/distributions/gradle-2.14.1-bin.zip -o "$RUNNER_TEMP/gradle.zip"
+          unzip -q "$RUNNER_TEMP/gradle.zip" -d "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/gradle-2.14.1/bin" >> "$GITHUB_PATH"
+      - name: Build
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 25
+          max_attempts: 3
+          retry_wait_seconds: 90
+          command: >-
+            cd forge19 && gradle setupCiWorkspace build --no-daemon
+            -Pmc_version=${{ matrix.mc }} -Pforge_version=${{ matrix.forge }} -Pmcp_mappings=${{ matrix.mcp }} -Pfg_version=${{ matrix.fg }}
+      - working-directory: forge19
+        run: |
+          mkdir -p out
+          cp build/libs/nexus-coop-forge-*[0-9].jar "out/nexus-coop-forge-${{ matrix.from }}_${{ matrix.to }}.jar"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: jar-forge-${{ matrix.from }}_${{ matrix.to }}
+          path: forge19/out/*.jar
+
+  # ---------- Legacy Fabric, Minecraft 1.7.10 - 1.12.2 (Loom для старых версий, Mixin) ----------
+  legacyfabric:
+    name: legacy fabric ${{ matrix.from }}-${{ matrix.to }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { from: '1.8',    to: '1.8.9',  mc: '1.8.9',  range: '>=1.8 <=1.8.9' }
+          - { from: '1.9',    to: '1.9.4',  mc: '1.9.4',  range: '>=1.9 <=1.9.4' }
+          - { from: '1.10',   to: '1.10.2', mc: '1.10.2', range: '>=1.10 <=1.10.2' }
+          - { from: '1.11',   to: '1.11.2', mc: '1.11.2', range: '>=1.11 <=1.11.2' }
+          - { from: '1.12',   to: '1.12.2', mc: '1.12.2', range: '>=1.12 <=1.12.2' }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.4.0'
+      - name: Build
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 25
+          max_attempts: 3
+          retry_wait_seconds: 90
+          command: >-
+            cd legacyfabric && gradle build --no-daemon
+            -Pminecraft_version=${{ matrix.mc }} "-Pmc_range=${{ matrix.range }}"
+      - name: Diagnostics (class names in the mapped game jar)
+        if: failure()
+        run: |
+          for j in $(find ~/.gradle/caches -path '*loom*' -name '*.jar' 2>/dev/null | head -200); do
+            unzip -l "$j" 2>/dev/null | grep -E "/(IntegratedServer|ServerNetworkIo|NetworkSystem|PlayerManager|MinecraftServer)\.class" | sed "s|^|$(basename $j): |"
+          done | head -40
+      - working-directory: legacyfabric
+        run: |
+          mkdir -p out
+          ls -l build/libs
+          cp build/libs/nexus-coop-fabric-*[0-9].jar "out/nexus-coop-fabric-${{ matrix.from }}_${{ matrix.to }}.jar"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: jar-legacyfabric-${{ matrix.from }}_${{ matrix.to }}
+          path: legacyfabric/out/*.jar
+
+  collect:
+    name: all jars in one archive
+    needs: [fabric, fabric26, neoforge, forge, forge7, forge112, forge17, forge19, legacyfabric, forge14, forge13]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: jar-*
+          merge-multiple: true
+          path: all
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nexus-coop-all
+          path: all/*.jar
