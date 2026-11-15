@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "id": "nexus_coop",
+  "version": "${version}",
+  "name": "NexusMC Coop Helper",
+  "description": "Открывает мир для друзей через лаунчер NexusMC. Без лаунчера ничего не делает.",
+  "authors": ["NexusMC"],
+  "environment": "client",
+  "mixins": ["nexus-coop.mixins.json"],
+  "depends": {
+    "fabricloader": ">=0.14.0",
+    "minecraft": "${mc_range}"
+  }
+}

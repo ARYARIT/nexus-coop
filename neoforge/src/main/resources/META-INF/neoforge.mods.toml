@@ -1,0 +1,26 @@
+modLoader = "javafml"
+loaderVersion = "[1,)"
+license = "MIT"
+
+[[mods]]
+modId = "nexus_coop"
+version = "${version}"
+displayName = "NexusMC Coop Helper"
+description = '''Открывает мир для друзей через лаунчер NexusMC. Без лаунчера ничего не делает.'''
+
+[[mixins]]
+config = "nexus-coop.mixins.json"
+
+[[dependencies.nexus_coop]]
+modId = "neoforge"
+type = "required"
+versionRange = "${neo_range}"
+ordering = "NONE"
+side = "CLIENT"
+
+[[dependencies.nexus_coop]]
+modId = "minecraft"
+type = "required"
+versionRange = "${mc_range}"
+ordering = "NONE"
+side = "CLIENT"
