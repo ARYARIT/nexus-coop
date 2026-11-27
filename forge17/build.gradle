@@ -1,0 +1,27 @@
+plugins {
+    id 'java'
+    id 'com.gtnewhorizons.retrofuturagradle' version '1.4.+'
+}
+
+version = project.mod_version
+group = 'dev.nexusmc'
+archivesBaseName = 'nexus-coop-forge'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(8)
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+minecraft {
+    mcVersion = '1.7.10'
+    username = 'Developer'
+}
+
+repositories {
+    mavenCentral()
+}

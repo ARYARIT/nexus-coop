@@ -1,0 +1,14 @@
+{
+  "required": false,
+  "minVersion": "0.8",
+  "package": "dev.nexusmc.coop.mixin",
+  "compatibilityLevel": "JAVA_${mixin_level}",
+  "client": [
+    "IntegratedServerMixin",
+    "ServerConnectionListenerMixin",
+    "MinecraftMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 0
+  }
+}

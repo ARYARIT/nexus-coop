@@ -1,0 +1,37 @@
+buildscript {
+    repositories {
+        maven { url = 'https://maven.minecraftforge.net' }
+        mavenCentral()
+    }
+    dependencies {
+        classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '3.+', changing: true
+    }
+}
+
+apply plugin: 'net.minecraftforge.gradle'
+apply plugin: 'java'
+
+version = project.mod_version
+group = 'dev.nexusmc'
+archivesBaseName = 'nexus-coop-forge'
+
+sourceCompatibility = targetCompatibility = compileJava.sourceCompatibility = compileJava.targetCompatibility = '1.8'
+compileJava.options.encoding = 'UTF-8'
+
+minecraft {
+    mappings channel: 'official', version: project.mc_version
+}
+
+dependencies {
+    minecraft "net.minecraftforge:forge:${project.mc_version}-${project.forge_version}"
+}
+
+processResources {
+    inputs.property 'loader_range', project.loader_range
+    inputs.property 'pack_format', project.pack_format
+    filesMatching(['META-INF/mods.toml', 'pack.mcmeta']) {
+        expand 'loader_range': project.loader_range, 'pack_format': project.pack_format
+    }
+}
+
+jar.finalizedBy('reobfJar')
