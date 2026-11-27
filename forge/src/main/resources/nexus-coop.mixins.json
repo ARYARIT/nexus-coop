@@ -1,0 +1,15 @@
+{
+  "required": false,
+  "minVersion": "0.8",
+  "package": "dev.nexusmc.coop.mixin",
+  "compatibilityLevel": "JAVA_${mixin_level}",
+  "refmap": "nexus-coop.refmap.json",
+  "client": [
+    "IntegratedServerMixin",
+    "ServerConnectionListenerMixin",
+    "MinecraftMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 0
+  }
+}

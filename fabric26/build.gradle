@@ -1,0 +1,46 @@
+plugins {
+    id 'net.fabricmc.fabric-loom'
+}
+
+version = project.mod_version
+base { archivesName = 'nexus-coop' }
+
+def javaRelease = project.java_release as int
+
+repositories {
+    maven { url = 'https://libraries.minecraft.net/' }
+    mavenCentral()
+}
+
+configurations.configureEach {
+    resolutionStrategy.eachDependency { details ->
+        def r = details.requested
+        if (r.group == 'org.lwjgl' && r.version != null && r.version.contains('-mojang')) {
+            details.useVersion(r.version.substring(0, r.version.indexOf('-mojang')))
+        }
+    }
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+
+    implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+}
+
+processResources {
+    inputs.property 'version', project.version
+    inputs.property 'mc_dep', project.mc_dep
+    inputs.property 'mixin_level', project.mixin_level
+    filesMatching(['fabric.mod.json', 'nexus-coop.mixins.json']) {
+        expand 'version': project.version, 'mc_dep': project.mc_dep, 'mixin_level': project.mixin_level
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.release = javaRelease
+}
+
+java {
+    sourceCompatibility = JavaVersion.toVersion(javaRelease)
+    targetCompatibility = JavaVersion.toVersion(javaRelease)
+}
